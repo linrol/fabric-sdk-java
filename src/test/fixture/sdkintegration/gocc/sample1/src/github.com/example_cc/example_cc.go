@@ -81,6 +81,11 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	logger.Info("########### example_cc Invoke ###########")
 
 	function, args := stub.GetFunctionAndParameters()
+	
+	if function == "create" {
+	   // Create an entity from its state
+       return t.create(stub, args)
+	}
 
 	if function == "delete" {
 		// Deletes an entity from its state
@@ -99,6 +104,34 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 	logger.Errorf("Unknown action, check the first argument, must be one of 'delete', 'query', or 'move'. But got: %v", args[0])
 	return shim.Error(fmt.Sprintf("Unknown action, check the first argument, must be one of 'delete', 'query', or 'move'. But got: %v", args[0]))
+}
+
+// Create an entity from state
+func (t *SimpleChaincode) create(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+    var C string    // Entities
+    var Cval int // Asset holdings
+    var err error
+    
+    if len(args) != 2 {
+        return shim.Error("Incorrect number of arguments. Expecting 2")
+    }
+    
+    C = args[0]
+    
+    Cval, err = strconv.Atoi(args[1])
+    if err != nil {
+        return shim.Error("Expecting integer value for asset holding")
+    }
+
+    // Write the state to the ledger
+    logger.Infof("Ckey = %d, Cval = %d\n", C, Cval)
+    err = stub.PutState(C, []byte(strconv.Itoa(Cval)))
+    if err != nil {
+        return shim.Error(err.Error())
+    }
+    
+    return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) pb.Response {
